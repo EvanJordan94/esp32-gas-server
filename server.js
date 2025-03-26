@@ -8,11 +8,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ✅ Kết nối MongoDB (bạn cần cài MongoDB hoặc dùng MongoDB Atlas)
-mongoose.connect('mongodb://localhost:27017/gasdata', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-
+mongoose.connect('mongodb+srv://esp32user:Thanh94%40@esp32-gas-server.bjisc.mongodb.net/gasdata?retryWrites=true&w=majority');
 // ✅ Tạo cấu trúc dữ liệu
 const GasSchema = new mongoose.Schema({
   gas: Number,
