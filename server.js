@@ -8,11 +8,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // ✅ Kết nối MongoDB (bạn cần cài MongoDB hoặc dùng MongoDB Atlas)
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
-// ✅ Tạo cấu trúc dữ liệu
+mongoose.connect(process.env.MONGODB_URI);
 const GasSchema = new mongoose.Schema({
   gas: Number,
   distance: Number,
