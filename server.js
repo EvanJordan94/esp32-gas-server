@@ -60,6 +60,28 @@ app.post('/api/control', (req, res) => {
   }
 });
 
+// ✅ API kiểm tra kết nối ESP32 (khi ESP32 gửi tín hiệu kết nối)
+app.post('/api/esp32/connect', (req, res) => {
+  esp32Connected = true; // Đánh dấu ESP32 đã kết nối
+  res.status(200).json({ message: 'ESP32 connected' });
+});
+
+// ✅ API kiểm tra trạng thái kết nối ESP32
+app.get('/api/esp32/status', (req, res) => {
+  if (esp32Connected) {
+    res.json({ status: 'connected' });
+  } else {
+    res.json({ status: 'disconnected' });
+  }
+});
+
+// ✅ API để tắt kết nối ESP32 (khi ESP32 ngắt kết nối)
+app.post('/api/esp32/disconnect', (req, res) => {
+  esp32Connected = false; // Đánh dấu ESP32 đã ngắt kết nối
+  res.status(200).json({ message: 'ESP32 disconnected' });
+});
+
+
 // ✅ Khởi động server
 const PORT = 3000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
