@@ -81,6 +81,16 @@ app.post('/api/esp32/disconnect', (req, res) => {
   res.status(200).json({ message: 'ESP32 disconnected' });
 });
 
+// ✅ API: Lấy bản ghi mới nhất (1 record gần nhất)
+app.get('/api/gas/latest', async (req, res) => {
+  try {
+    const latest = await GasData.findOne().sort({ timestamp: -1 });
+    res.json(latest);
+  } catch (err) {
+    res.status(500).json({ error: 'Không thể lấy dữ liệu mới nhất' });
+  }
+});
+
 
 // ✅ Khởi động server
 const PORT = 3000;
