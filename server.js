@@ -9,6 +9,7 @@ app.use(bodyParser.json());
 
 // ✅ Kết nối MongoDB (bạn cần cài MongoDB hoặc dùng MongoDB Atlas)
 mongoose.connect(process.env.MONGODB_URI);
+
 const GasSchema = new mongoose.Schema({
   gas: Number,
   distance: Number,
@@ -16,6 +17,13 @@ const GasSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 const GasData = mongoose.model('GasData', GasSchema);
+
+const StatusSchema = new mongoose.Schema({
+  isConnected: Boolean,
+  connectionCount: Number,
+  updatedAt: { type: Date, default: Date.now }
+});
+const Esp32Status = mongoose.model('Esp32Status', StatusSchema);
 
 // ✅ API: ESP32 gửi dữ liệu
 app.post('/api/gas', async (req, res) => {
@@ -46,9 +54,7 @@ app.get('/api/gas/range', async (req, res) => {
 
 // ✅ API điều khiển thiết bị (bật/tắt còi)
 app.post('/api/control', (req, res) => {
-  const { action } = req.body;  // action có thể là 'ON' hoặc 'OFF'
-
-  // Kiểm tra hành động và xử lý điều khiển thiết bị
+  const { action } = req.body;
   if (action === 'ON') {
     console.log('Bật thiết bị');
     res.status(200).json({ message: 'Device turned ON' });
@@ -61,26 +67,42 @@ app.post('/api/control', (req, res) => {
 });
 
 // ✅ API kiểm tra kết nối ESP32 (khi ESP32 gửi tín hiệu kết nối)
-let esp32Connected = false;
-
-app.post('/api/esp32/connect', (req, res) => {
-  esp32Connected = true; // Đánh dấu ESP32 đã kết nối
+app.post('/api/esp32/connect', async (req, res) => {
+  let status = await Esp32Status.findOne();
+  if (!status) {
+    status = new Esp32Status({ isConnected: true, connectionCount: 1 });
+  } else {
+    status.isConnected = true;
+    status.connectionCount += 1;
+  }
+  status.updatedAt = new Date();
+  await status.save();
   res.status(200).json({ message: 'ESP32 connected' });
 });
 
-// ✅ API kiểm tra trạng thái kết nối ESP32
-app.get('/api/esp32/status', (req, res) => {
-  if (esp32Connected) {
-    res.json({ status: 'connected' });
+// ✅ API để tắt kết nối ESP32 (khi ESP32 ngắt kết nối)
+app.post('/api/esp32/disconnect', async (req, res) => {
+  let status = await Esp32Status.findOne();
+  if (!status) {
+    status = new Esp32Status({ isConnected: false, connectionCount: 0 });
   } else {
-    res.json({ status: 'disconnected' });
+    status.isConnected = false;
   }
+  status.updatedAt = new Date();
+  await status.save();
+  res.status(200).json({ message: 'ESP32 disconnected' });
 });
 
-// ✅ API để tắt kết nối ESP32 (khi ESP32 ngắt kết nối)
-app.post('/api/esp32/disconnect', (req, res) => {
-  esp32Connected = false; // Đánh dấu ESP32 đã ngắt kết nối
-  res.status(200).json({ message: 'ESP32 disconnected' });
+// ✅ API kiểm tra trạng thái kết nối ESP32
+app.get('/api/esp32/status', async (req, res) => {
+  const status = await Esp32Status.findOne();
+  if (!status) {
+    return res.json({ status: 'disconnected', connectionCount: 0 });
+  }
+  res.json({
+    status: status.isConnected ? 'connected' : 'disconnected',
+    connectionCount: status.connectionCount
+  });
 });
 
 // ✅ API: Lấy bản ghi mới nhất (1 record gần nhất)
