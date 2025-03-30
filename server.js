@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ Kết nối MongoDB (bạn cần cài MongoDB hoặc dùng MongoDB Atlas)
+// ✅ Kết nối MongoDB
 mongoose.connect(process.env.MONGODB_URI);
 
 const GasSchema = new mongoose.Schema({
@@ -24,6 +24,8 @@ const StatusSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 const Esp32Status = mongoose.model('Esp32Status', StatusSchema);
+
+let buzzerState = 'OFF'; // Lưu trạng thái còi
 
 // ✅ API: ESP32 gửi dữ liệu
 app.post('/api/gas', async (req, res) => {
@@ -56,24 +58,30 @@ app.get('/api/gas/range', async (req, res) => {
 app.post('/api/control', (req, res) => {
   const { action } = req.body;
   if (action === 'ON') {
-    console.log('Bật thiết bị');
+    buzzerState = 'ON';
+    console.log('🟢 Bật thiết bị');
     res.status(200).json({ message: 'Device turned ON' });
   } else if (action === 'OFF') {
-    console.log('Tắt thiết bị');
+    buzzerState = 'OFF';
+    console.log('🔴 Tắt thiết bị');
     res.status(200).json({ message: 'Device turned OFF' });
   } else {
     res.status(400).json({ error: 'Invalid action' });
   }
 });
 
-a// ✅ API kiểm tra kết nối ESP32 (chỉ tăng khi chuyển từ ngắt → kết nối)
+// ✅ API ESP32 lấy trạng thái còi hiện tại
+app.get('/api/control', (req, res) => {
+  res.json({ buzzer: buzzerState });
+});
+
+// ✅ API kiểm tra kết nối ESP32 (chỉ tăng khi chuyển từ ngắt → kết nối)
 app.post('/api/esp32/connect', async (req, res) => {
   let status = await Esp32Status.findOne();
   if (!status) {
     status = new Esp32Status({ isConnected: true, connectionCount: 1 });
   } else {
     if (!status.isConnected) {
-      // Chỉ tăng khi trước đó là DISCONNECTED
       status.connectionCount += 1;
     }
     status.isConnected = true;
@@ -82,7 +90,6 @@ app.post('/api/esp32/connect', async (req, res) => {
   await status.save();
   res.status(200).json({ message: 'ESP32 connected' });
 });
-
 
 // ✅ API để tắt kết nối ESP32 (khi ESP32 ngắt kết nối)
 app.post('/api/esp32/disconnect', async (req, res) => {
