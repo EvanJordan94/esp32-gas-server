@@ -12,15 +12,16 @@ mongoose.connect(process.env.MONGODB_URI);
 const GasSchema = new mongoose.Schema({
   gas: Number,
   distance: Number,
+  connectionCount: { type: Number, default: 0 },
   timestamp: { type: Date, default: Date.now }
 });
 const GasData = mongoose.model('GasData', GasSchema);
 
 // ✅ API: ESP32 gửi dữ liệu
 app.post('/api/gas', async (req, res) => {
-  const { gas, distance } = req.body;
+  const { gas, distance, connectionCount } = req.body;
   try {
-    const newData = new GasData({ gas, distance });
+    const newData = new GasData({ gas, distance, connectionCount });
     await newData.save();
     res.status(200).json({ message: 'Saved' });
   } catch (err) {
@@ -42,18 +43,17 @@ app.get('/api/gas/range', async (req, res) => {
   }).sort({ timestamp: -1 });
   res.json(data);
 });
+
 // ✅ API điều khiển thiết bị (bật/tắt còi)
 app.post('/api/control', (req, res) => {
   const { action } = req.body;  // action có thể là 'ON' hoặc 'OFF'
-  
+
   // Kiểm tra hành động và xử lý điều khiển thiết bị
   if (action === 'ON') {
-    console.log('Bật thiết bị');  // Gửi tín hiệu bật thiết bị (còi, servo, v.v.)
-    // Ở đây bạn có thể gửi lệnh tới ESP32 qua WebSocket, Bluetooth hoặc giao thức khác nếu cần
+    console.log('Bật thiết bị');
     res.status(200).json({ message: 'Device turned ON' });
   } else if (action === 'OFF') {
-    console.log('Tắt thiết bị');  // Gửi tín hiệu tắt thiết bị (còi, servo, v.v.)
-    // Xử lý tắt thiết bị tại đây
+    console.log('Tắt thiết bị');
     res.status(200).json({ message: 'Device turned OFF' });
   } else {
     res.status(400).json({ error: 'Invalid action' });
@@ -61,6 +61,8 @@ app.post('/api/control', (req, res) => {
 });
 
 // ✅ API kiểm tra kết nối ESP32 (khi ESP32 gửi tín hiệu kết nối)
+let esp32Connected = false;
+
 app.post('/api/esp32/connect', (req, res) => {
   esp32Connected = true; // Đánh dấu ESP32 đã kết nối
   res.status(200).json({ message: 'ESP32 connected' });
@@ -90,7 +92,6 @@ app.get('/api/gas/latest', async (req, res) => {
     res.status(500).json({ error: 'Không thể lấy dữ liệu mới nhất' });
   }
 });
-
 
 // ✅ Khởi động server
 const PORT = 3000;
