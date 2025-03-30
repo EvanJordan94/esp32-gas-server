@@ -66,19 +66,23 @@ app.post('/api/control', (req, res) => {
   }
 });
 
-// ✅ API kiểm tra kết nối ESP32 (khi ESP32 gửi tín hiệu kết nối)
+a// ✅ API kiểm tra kết nối ESP32 (chỉ tăng khi chuyển từ ngắt → kết nối)
 app.post('/api/esp32/connect', async (req, res) => {
   let status = await Esp32Status.findOne();
   if (!status) {
     status = new Esp32Status({ isConnected: true, connectionCount: 1 });
   } else {
+    if (!status.isConnected) {
+      // Chỉ tăng khi trước đó là DISCONNECTED
+      status.connectionCount += 1;
+    }
     status.isConnected = true;
-    status.connectionCount += 1;
   }
   status.updatedAt = new Date();
   await status.save();
   res.status(200).json({ message: 'ESP32 connected' });
 });
+
 
 // ✅ API để tắt kết nối ESP32 (khi ESP32 ngắt kết nối)
 app.post('/api/esp32/disconnect', async (req, res) => {
