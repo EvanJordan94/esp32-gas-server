@@ -82,7 +82,7 @@ app.get('/api/control', (req, res) => {
 });
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
-app.get('/api/esp32/status', async (req, res) => {
+app.get('/api/status', async (req, res) => {
   try {
     const status = await Esp32Status.findOne();
     console.log("Trạng thái kết nối ESP32:", status);  // In trạng thái kết nối của ESP32
@@ -102,7 +102,7 @@ app.get('/api/esp32/status', async (req, res) => {
 });
 
 // ✅ API ESP32 kết nối lại (Khi app bật switch)
-app.post('/api/esp32/connect', async (req, res) => {
+app.post('/api/connect', async (req, res) => {
   try {
     let status = await Esp32Status.findOne();
     if (!status) {
@@ -120,7 +120,7 @@ app.post('/api/esp32/connect', async (req, res) => {
 });
 
 // ✅ API ESP32 ngắt kết nối (Khi app tắt switch)
-app.post('/api/esp32/disconnect', async (req, res) => {
+app.post('/api/disconnect', async (req, res) => {
   try {
     let status = await Esp32Status.findOne();
     if (!status) {
