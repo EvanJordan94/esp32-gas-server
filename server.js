@@ -30,14 +30,17 @@ let buzzerState = 'OFF'; // Lưu trạng thái còi
 // ✅ API: ESP32 gửi dữ liệu
 app.post('/api/gas', async (req, res) => {
   const { gas, distance, connectionCount } = req.body;
+  console.log("Dữ liệu nhận được từ ESP32:", req.body);  // In dữ liệu nhận từ ESP32
   try {
     const newData = new GasData({ gas, distance, connectionCount });
     await newData.save();
     res.status(200).json({ message: 'Saved' });
   } catch (err) {
+    console.error("Lỗi lưu dữ liệu:", err);
     res.status(500).json({ error: 'Save failed' });
   }
 });
+
 
 // ✅ API: App Android lấy tất cả lịch sử
 app.get('/api/gas', async (req, res) => {
@@ -108,6 +111,7 @@ app.post('/api/esp32/disconnect', async (req, res) => {
 // ✅ API kiểm tra trạng thái kết nối ESP32
 app.get('/api/esp32/status', async (req, res) => {
   const status = await Esp32Status.findOne();
+  console.log("Trạng thái kết nối ESP32:", status);  // In trạng thái kết nối của ESP32
   if (!status) {
     return res.json({ status: 'disconnected', connectionCount: 0 });
   }
@@ -117,15 +121,19 @@ app.get('/api/esp32/status', async (req, res) => {
   });
 });
 
+
 // ✅ API: Lấy bản ghi mới nhất (1 record gần nhất)
 app.get('/api/gas/latest', async (req, res) => {
   try {
     const latest = await GasData.findOne().sort({ timestamp: -1 });
+    console.log("Dữ liệu mới nhất từ database:", latest);  // In dữ liệu mới nhất
     res.json(latest);
   } catch (err) {
+    console.error("Lỗi lấy dữ liệu mới nhất:", err);
     res.status(500).json({ error: 'Không thể lấy dữ liệu mới nhất' });
   }
 });
+
 
 // ✅ Khởi động server
 const PORT = process.env.PORT || 10000;
