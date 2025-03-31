@@ -32,18 +32,15 @@ app.post('/api/gas', async (req, res) => {
   const { gas, distance, connectionCount } = req.body;
   console.log("Dữ liệu nhận được từ ESP32:", req.body);  // In dữ liệu nhận từ ESP32
   try {
-    if (connectionCount > 0) {  // Kiểm tra nếu switch bật (connectionCount > 0)
-      const newData = new GasData({ gas, distance, connectionCount });
-      await newData.save();
-      res.status(200).json({ message: 'Saved' });
-    } else {
-      res.status(400).json({ message: 'Switch is OFF, data not saved' });  // Nếu switch tắt, không lưu dữ liệu
-    }
+    const newData = new GasData({ gas, distance, connectionCount });
+    await newData.save();
+    res.status(200).json({ message: 'Saved' });
   } catch (err) {
     console.error("Lỗi lưu dữ liệu:", err);
     res.status(500).json({ error: 'Save failed' });
   }
 });
+
 
 // ✅ API: App Android lấy tất cả lịch sử
 app.get('/api/gas', async (req, res) => {
@@ -59,6 +56,7 @@ app.get('/api/gas/range', async (req, res) => {
   }).sort({ timestamp: 1 }); // sắp xếp tăng dần để vẽ biểu đồ đúng chiều
   res.json(data);
 });
+
 
 // ✅ API điều khiển thiết bị (bật/tắt còi)
 app.post('/api/control', (req, res) => {
@@ -82,12 +80,13 @@ app.get('/api/control', (req, res) => {
 });
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
-app.get('/api/status', async (req, res) => {
+app.get('/api/esp32/status', async (req, res) => {
   try {
     const status = await Esp32Status.findOne();
     console.log("Trạng thái kết nối ESP32:", status);  // In trạng thái kết nối của ESP32
 
     if (!status) {
+      // Nếu không có bản ghi nào, giả định rằng ESP32 đang ngắt kết nối
       return res.json({ status: 'disconnected', connectionCount: 0 });
     }
 
@@ -102,36 +101,45 @@ app.get('/api/status', async (req, res) => {
 });
 
 // ✅ API ESP32 kết nối lại (Khi app bật switch)
-app.post('/api/connect', async (req, res) => {
+app.post('/api/esp32/connect', async (req, res) => {
   try {
     let status = await Esp32Status.findOne();
     if (!status) {
+      // If no status exists, create it with 'isConnected' set to true
       status = new Esp32Status({ isConnected: true, connectionCount: 1 });
     } else {
-      status.connectionCount += 1;
-      status.isConnected = true;
+      if (!status.isConnected) {
+        // If not connected, increase the connection count
+        status.connectionCount += 1;
+      }
+      status.isConnected = true;  // Set to connected
     }
-    status.updatedAt = new Date();
-    await status.save();
+    status.updatedAt = new Date(); // Update the timestamp
+    await status.save();  // Save the updated status to DB
+    console.log(`ESP32 Connected: connectionCount ${status.connectionCount}`);
     res.status(200).json({ message: 'ESP32 connected' });
   } catch (err) {
+    console.error("Error while connecting ESP32:", err);
     res.status(500).json({ error: 'Failed to connect ESP32' });
   }
 });
 
 // ✅ API ESP32 ngắt kết nối (Khi app tắt switch)
-app.post('/api/disconnect', async (req, res) => {
+app.post('/api/esp32/disconnect', async (req, res) => {
   try {
     let status = await Esp32Status.findOne();
     if (!status) {
+      // If no status exists, create it with 'isConnected' set to false
       status = new Esp32Status({ isConnected: false, connectionCount: 0 });
     } else {
-      status.isConnected = false;
+      status.isConnected = false;  // Set to disconnected
     }
-    status.updatedAt = new Date();
-    await status.save();
+    status.updatedAt = new Date(); // Update the timestamp
+    await status.save();  // Save the updated status to DB
+    console.log(`ESP32 Disconnected: connectionCount ${status.connectionCount}`);
     res.status(200).json({ message: 'ESP32 disconnected' });
   } catch (err) {
+    console.error("Error while disconnecting ESP32:", err);
     res.status(500).json({ error: 'Failed to disconnect ESP32' });
   }
 });
@@ -147,6 +155,7 @@ app.get('/api/gas/latest', async (req, res) => {
     res.status(500).json({ error: 'Không thể lấy dữ liệu mới nhất' });
   }
 });
+
 
 // ✅ Khởi động server
 const PORT = process.env.PORT || 10000;
