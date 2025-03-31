@@ -61,19 +61,33 @@ app.get('/api/gas/range', async (req, res) => {
 // ✅ API điều khiển thiết bị (bật/tắt còi)
 app.post('/api/control', (req, res) => {
   const { action } = req.body;
-  if (action === 'ON') {
-    buzzerState = 'ON';
-    digitalWrite(BUZZER_PIN, HIGH);  // Bật còi
-    console.log('🟢 Bật còi');
-    res.status(200).json({ message: 'Device turned ON' });
-  } else if (action === 'OFF') {
-    buzzerState = 'OFF';
-    digitalWrite(BUZZER_PIN, LOW);   // Tắt còi
-    console.log('🔴 Tắt còi');
-    res.status(200).json({ message: 'Device turned OFF' });
-  } else {
-    res.status(400).json({ error: 'Invalid action' });
-  }
+
+  // Gửi lệnh điều khiển đến ESP32 để bật/tắt còi
+  const url = 'http://ESP32_IP_ADDRESS/api/control';  // Thay ESP32_IP_ADDRESS bằng IP thực tế của ESP32
+
+  const postData = JSON.stringify({ action: action });
+
+  const options = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: postData,
+  };
+
+  fetch(url, options)
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.message === 'Device turned ON' || data.message === 'Device turned OFF') {
+        res.status(200).json({ message: 'Device control command forwarded to ESP32' });
+      } else {
+        res.status(400).json({ error: 'Error in controlling device on ESP32' });
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Failed to control device on ESP32' });
+    });
 });
 
 // ✅ API ESP32 lấy trạng thái còi hiện tại
