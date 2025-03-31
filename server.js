@@ -63,11 +63,13 @@ app.post('/api/control', (req, res) => {
   const { action } = req.body;
   if (action === 'ON') {
     buzzerState = 'ON';
-    console.log('🟢 Bật thiết bị');
+    digitalWrite(BUZZER_PIN, HIGH);  // Bật còi
+    console.log('🟢 Bật còi');
     res.status(200).json({ message: 'Device turned ON' });
   } else if (action === 'OFF') {
     buzzerState = 'OFF';
-    console.log('🔴 Tắt thiết bị');
+    digitalWrite(BUZZER_PIN, LOW);   // Tắt còi
+    console.log('🔴 Tắt còi');
     res.status(200).json({ message: 'Device turned OFF' });
   } else {
     res.status(400).json({ error: 'Invalid action' });
