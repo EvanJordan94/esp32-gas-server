@@ -50,9 +50,10 @@ app.get('/api/gas/range', async (req, res) => {
   const { from, to } = req.query;
   const data = await GasData.find({
     timestamp: { $gte: new Date(from), $lte: new Date(to) }
-  }).sort({ timestamp: -1 });
+  }).sort({ timestamp: 1 }); // sắp xếp tăng dần để vẽ biểu đồ đúng chiều
   res.json(data);
 });
+
 
 // ✅ API điều khiển thiết bị (bật/tắt còi)
 app.post('/api/control', (req, res) => {
