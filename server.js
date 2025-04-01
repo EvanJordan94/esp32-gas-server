@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
+const fetch = require('node-fetch');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -59,43 +59,36 @@ app.get('/api/gas/range', async (req, res) => {
 
 
 // ✅ API điều khiển thiết bị (bật/tắt còi)
-
 app.post('/api/control', (req, res) => {
   const { action } = req.body;
 
-  // ✅ Cập nhật trạng thái hiện tại
-  buzzerState = action;
+  // Gửi lệnh điều khiển tới ESP32 thông qua HTTP
+  const esp32Url = 'http://<ESP32_IP>/api/control';  // Đảm bảo ESP32 có địa chỉ IP công cộng hoặc server lắng nghe HTTP
 
-  const url = 'http://192.168.0.117/api/control'; // Địa chỉ nội mạng của ESP32
-  const postData = JSON.stringify({ action });
-
-  const options = {
+  fetch(esp32Url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: postData,
-  };
-
-  fetch(url, options)
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.message === 'Device turned ON' || data.message === 'Device turned OFF') {
-        res.status(200).json({ message: 'Device control command forwarded to ESP32' });
-      } else {
-        res.status(400).json({ error: 'Error in controlling device on ESP32' });
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-      res.status(500).json({ error: 'Failed to control device on ESP32' });
-    });
+    body: JSON.stringify({ action: action })
+  })
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.message === 'Device turned ON' || data.message === 'Device turned OFF') {
+      res.status(200).json({ message: 'Device control command forwarded to ESP32' });
+    } else {
+      res.status(400).json({ error: 'Error in controlling device on ESP32' });
+    }
+  })
+  .catch((error) => {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to control device on ESP32' });
+  });
 });
-
-
 
 // ✅ API ESP32 lấy trạng thái còi hiện tại
 app.get('/api/control', (req, res) => {
   res.json({ buzzer: buzzerState });
 });
+
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
 app.get('/api/esp32/status', async (req, res) => {
