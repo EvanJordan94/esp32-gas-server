@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const moment = require('moment-timezone'); 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -50,10 +51,46 @@ app.get('/api/gas', async (req, res) => {
 // ✅ API: Lọc dữ liệu theo thời gian
 app.get('/api/gas/range', async (req, res) => {
   const { from, to } = req.query;
-  const data = await GasData.find({
-    timestamp: { $gte: new Date(from), $lte: new Date(to) }
-  }).sort({ timestamp: 1 }); // sắp xếp tăng dần để vẽ biểu đồ đúng chiều
-  res.json(data);
+  const fromDate = moment.tz(from, "Asia/Ho_Chi_Minh").toDate(); // Chuyển đổi sang GMT+7
+  const toDate = moment.tz(to, "Asia/Ho_Chi_Minh").toDate(); // Chuyển đổi sang GMT+7
+
+  try {
+      const groupedData = await GasData.aggregate([
+          {
+              $match: {
+                  timestamp: { $gte: fromDate, $lte: toDate }
+              }
+          },
+          {
+              $group: {
+                  _id: {
+                      year: { $year: "$timestamp" },
+                      month: { $month: "$timestamp" },
+                      day: { $dayOfMonth: "$timestamp" },
+                      hour: { $hour: "$timestamp" },
+                      minute: { $minute: { $floor: { $divide: [{ $minute: "$timestamp" }, 15] } } } // Gộp nhóm theo 15 phút
+                  },
+                  avgGas: { $avg: "$gas" },
+                  timestamp: { $first: "$timestamp" } // Lấy timestamp đầu tiên trong nhóm
+              }
+          },
+          {
+              $sort: { timestamp: 1 }
+          },
+          {
+              $project: {
+                  _id: 0,
+                  avgGas: 1,
+                  timestamp: 1
+              }
+          }
+      ]);
+
+      res.json(groupedData);
+  } catch (err) {
+      console.error("Lỗi khi lọc dữ liệu:", err);
+      res.status(500).json({ error: 'Lỗi khi lọc dữ liệu' });
+  }
 });
 
 
