@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const WebSocket = require('ws');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -170,9 +169,3 @@ app.get('/api/gas/latest', async (req, res) => {
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
 
-// Tạo WebSocket kết nối khi có yêu cầu HTTP
-server.on('upgrade', (request, socket, head) => {
-  wss.handleUpgrade(request, socket, head, (ws) => {
-    wss.emit('connection', ws, request);
-  });
-});
