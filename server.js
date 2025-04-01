@@ -59,19 +59,19 @@ app.get('/api/gas/range', async (req, res) => {
 
 
 // ✅ API điều khiển thiết bị (bật/tắt còi)
+
 app.post('/api/control', (req, res) => {
   const { action } = req.body;
 
-  // Gửi lệnh điều khiển đến ESP32 để bật/tắt còi
-  const url = 'http://192.168.0.117/api/control';  // Thay ESP32_IP_ADDRESS bằng IP thực tế của ESP32
+  // ✅ Cập nhật trạng thái hiện tại
+  buzzerState = action;
 
-  const postData = JSON.stringify({ action: action });
+  const url = 'http://192.168.0.117/api/control'; // Địa chỉ nội mạng của ESP32
+  const postData = JSON.stringify({ action });
 
   const options = {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: postData,
   };
 
@@ -89,6 +89,8 @@ app.post('/api/control', (req, res) => {
       res.status(500).json({ error: 'Failed to control device on ESP32' });
     });
 });
+
+
 
 // ✅ API ESP32 lấy trạng thái còi hiện tại
 app.get('/api/control', (req, res) => {
