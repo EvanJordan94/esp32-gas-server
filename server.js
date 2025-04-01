@@ -63,7 +63,7 @@ app.post('/api/control', (req, res) => {
   const { action } = req.body;
 
   // Gửi lệnh điều khiển tới ESP32 thông qua HTTP
-  const esp32Url = 'https://esp32-gas-server.onrender.com/api/control';  // Đảm bảo ESP32 có địa chỉ IP công cộng hoặc server lắng nghe HTTP
+  const esp32Url = 'https://e868-118-70-127-27.ngrok-free.app/api/control';  // Đảm bảo ESP32 có địa chỉ IP công cộng hoặc server lắng nghe HTTP
 
   fetch(esp32Url, {
     method: 'POST',
