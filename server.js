@@ -64,7 +64,7 @@ app.post('/api/control', (req, res) => {
   buzzerState = action;
 
   // Gửi lệnh tới ESP32 để bật/tắt còi
-  const esp32Url = 'https://192.168.0.102/api/control';  // Thay đổi với địa chỉ IP của ESP32
+  const esp32Url = 'https://192.168.0.102:8080/api/control';  // Thay đổi với địa chỉ IP của ESP32
 
   fetch(esp32Url, {
     method: 'POST',
