@@ -58,38 +58,35 @@ app.get('/api/gas/range', async (req, res) => {
 });
 
 
-// ✅ WebSocket Server
-const wss = new WebSocket.Server({ noServer: true }); // Tạo WebSocket Server
-wss.on('connection', (ws) => {
-  console.log('Client connected to WebSocket');
-  
-  ws.on('message', (message) => {
-    console.log('Received message:', message);
-    const data = JSON.parse(message);
-    
-    if (data.action === 'ON') {
-      buzzerState = 'ON';
-      console.log('Buzzer turned ON');
-      // Thực hiện lệnh bật còi trên ESP32 tại đây
-    } else if (data.action === 'OFF') {
-      buzzerState = 'OFF';
-      console.log('Buzzer turned OFF');
-      // Thực hiện lệnh tắt còi trên ESP32 tại đây
-    }
+app.post('/api/control', (req, res) => {
+  const { action } = req.body;
 
-    // Gửi phản hồi về client
-    ws.send(JSON.stringify({ status: 'success', buzzerState: buzzerState }));
-  });
+  // Cập nhật trạng thái còi
+  buzzerState = action;
 
-  ws.on('close', () => {
-    console.log('Client disconnected');
+  // Gửi lệnh tới ESP32 để bật/tắt còi
+  const esp32Url = 'https://esp32-gas-server.onrender.com/api/control';  // Thay đổi với địa chỉ IP của ESP32
+
+  fetch(esp32Url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action })
+  })
+  .then(response => response.json())
+  .then(data => {
+    res.json({ message: 'Command sent to ESP32', status: data.status });
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    res.status(500).json({ message: 'Error sending command to ESP32' });
   });
 });
 
-/// ✅ API ESP32 lấy trạng thái còi hiện tại
+// ✅ API lấy trạng thái còi hiện tại
 app.get('/api/control', (req, res) => {
   res.json({ buzzer: buzzerState });
 });
+
 
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
