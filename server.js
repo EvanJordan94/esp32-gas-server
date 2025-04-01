@@ -63,7 +63,7 @@ app.post('/api/control', (req, res) => {
   const { action } = req.body;
 
   // Gửi lệnh điều khiển đến ESP32 để bật/tắt còi
-  const url = 'https://esp32-gas-server.onrender.com/api/control';  // Thay ESP32_IP_ADDRESS bằng IP thực tế của ESP32
+  const url = 'http://192.168.0.117/api/control';  // Thay ESP32_IP_ADDRESS bằng IP thực tế của ESP32
 
   const postData = JSON.stringify({ action: action });
 
