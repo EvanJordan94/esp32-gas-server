@@ -2,12 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const WebSocket = require('ws');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ Kết nối MongoDB
+/// ✅ Kết nối MongoDB
 mongoose.connect(process.env.MONGODB_URI);
 
 const GasSchema = new mongoose.Schema({
@@ -58,29 +58,31 @@ app.get('/api/gas/range', async (req, res) => {
 });
 
 
-// ✅ API điều khiển thiết bị (bật/tắt còi)
-app.post('/api/control', (req, res) => {
-  const { action } = req.body;
-
-  // Gửi lệnh điều khiển tới ESP32 thông qua HTTP
-  const esp32Url = 'https://e868-118-70-127-27.ngrok-free.app/api/control';  // Đảm bảo ESP32 có địa chỉ IP công cộng hoặc server lắng nghe HTTP
-
-  fetch(esp32Url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: action })
-  })
-  .then((response) => response.json())
-  .then((data) => {
-    if (data.message === 'Device turned ON' || data.message === 'Device turned OFF') {
-      res.status(200).json({ message: 'Device control command forwarded to ESP32' });
-    } else {
-      res.status(400).json({ error: 'Error in controlling device on ESP32' });
+// ✅ WebSocket Server
+const wss = new WebSocket.Server({ noServer: true }); // Tạo WebSocket Server
+wss.on('connection', (ws) => {
+  console.log('Client connected to WebSocket');
+  
+  ws.on('message', (message) => {
+    console.log('Received message:', message);
+    const data = JSON.parse(message);
+    
+    if (data.action === 'ON') {
+      buzzerState = 'ON';
+      console.log('Buzzer turned ON');
+      // Thực hiện lệnh bật còi trên ESP32 tại đây
+    } else if (data.action === 'OFF') {
+      buzzerState = 'OFF';
+      console.log('Buzzer turned OFF');
+      // Thực hiện lệnh tắt còi trên ESP32 tại đây
     }
-  })
-  .catch((error) => {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Failed to control device on ESP32' });
+
+    // Gửi phản hồi về client
+    ws.send(JSON.stringify({ status: 'success', buzzerState: buzzerState }));
+  });
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
   });
 });
 
@@ -167,7 +169,13 @@ app.get('/api/gas/latest', async (req, res) => {
   }
 });
 
-
 // ✅ Khởi động server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+
+// Tạo WebSocket kết nối khi có yêu cầu HTTP
+server.on('upgrade', (request, socket, head) => {
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit('connection', ws, request);
+  });
+});
