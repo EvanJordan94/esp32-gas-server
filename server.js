@@ -13,12 +13,14 @@ mongoose.connect(process.env.MONGODB_URI);
 const GasSchema = new mongoose.Schema({
   gas: Number,
   distance: Number,
+  connectionCount: { type: Number, default: 0 },
   timestamp: { type: Date, default: Date.now }
 });
 const GasData = mongoose.model('GasData', GasSchema);
 
 const StatusSchema = new mongoose.Schema({
   isConnected: Boolean,
+  connectionCount: Number,
   updatedAt: { type: Date, default: Date.now }
 });
 const Esp32Status = mongoose.model('Esp32Status', StatusSchema);
@@ -68,20 +70,16 @@ let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
 // API điều khiển còi thủ công từ Android
 app.post('/api/buzzer/manual', (req, res) => {
   const { action } = req.body;
+  // Gửi lệnh đến ESP32
   fetch('http://192.168.75.174/manualBuzzer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action })
   })
   .then(response => response.json())
-  .then(data => {
-      // Ghi lại phản hồi từ ESP32
-      console.log("Phản hồi từ ESP32:", data);
-      res.json({ message: 'Lệnh đã được gửi', status: data.status });
-  })
+  .then(data => res.json({ message: 'Lệnh đã được gửi', status: data.status }))
   .catch(error => {
-      // Ghi lại lỗi
-      console.error("Lỗi gửi lệnh đến ESP32:", error);
+      console.error('Lỗi:', error);
       res.status(500).json({ message: 'Lỗi gửi lệnh đến ESP32' });
   });
 });
@@ -141,7 +139,7 @@ app.post('/api/esp32/connect', async (req, res) => {
   try {
       let status = await Esp32Status.findOne();
       if (!status) {
-          status = new Esp32Status({ isConnected: true});
+          status = new Esp32Status({ isConnected: true, connectionCount: 1 });
       } else {
           if (!status.isConnected) {
               status.isConnected = true;
@@ -151,6 +149,7 @@ app.post('/api/esp32/connect', async (req, res) => {
       }
       status.updatedAt = new Date();
       await status.save();
+      console.log(`ESP32 Connected: connectionCount ${status.connectionCount}`);
       res.status(200).json({ message: 'ESP32 connected' });
   } catch (err) {
       console.error("Error while connecting ESP32:", err);
