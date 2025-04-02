@@ -24,6 +24,12 @@ const StatusSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 const Esp32Status = mongoose.model('Esp32Status', StatusSchema);
+// Schema cho số lần cảnh báo
+const AlertSchema = new mongoose.Schema({
+  count: { type: Number, default: 0 },
+  updatedAt: { type: Date, default: Date.now }
+});
+const AlertCount = mongoose.model('AlertCount', AlertSchema);
 
 let buzzerState = 'OFF'; // Lưu trạng thái còi
 
@@ -173,7 +179,35 @@ app.get('/api/gas/latest', async (req, res) => {
     res.status(500).json({ error: 'Không thể lấy dữ liệu mới nhất' });
   }
 });
+// API cập nhật số lần cảnh báo
+app.post('/api/alerts/count', async (req, res) => {
+  try {
+    let alert = await AlertCount.findOne();
+    if (!alert) {
+      alert = new AlertCount({ count: 1 });
+    } else {
+      alert.count += 1;
+    }
+    alert.updatedAt = new Date();
+    await alert.save();
+    res.json({ message: 'Alert count updated' });
+  } catch (err) {
+    console.error('Error updating alert count:', err);
+    res.status(500).json({ error: 'Failed to update alert count' });
+  }
+});
 
+// API lấy số lần cảnh báo
+app.get('/api/alerts/count', async (req, res) => {
+  try {
+    const alert = await AlertCount.findOne();
+    const count = alert ? alert.count : 0;
+    res.json({ count });
+  } catch (err) {
+    console.error('Error getting alert count:', err);
+    res.status(500).json({ error: 'Failed to get alert count' });
+  }
+});
 // ✅ Khởi động server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
