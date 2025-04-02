@@ -67,22 +67,41 @@ app.get('/api/gas/range', async (req, res) => {
 });
 let manualBuzzerState = 'OFF'; // Trạng thái còi thủ công
 let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
-app.post('/api/control', (req, res) => {
-  const { action, manual } = req.body; // Lấy cờ manual
-  let state;
-  if (manual) {
-      manualBuzzerState = action;
-      state = manualBuzzerState;
-  } else {
-      autoBuzzerState = action;
-      state = autoBuzzerState;
-  }
+// API điều khiển còi thủ công
+app.post('/api/control/manual', (req, res) => {
+  const { action } = req.body;
+  manualBuzzerState = action;
+
   // Gửi lệnh tới ESP32 để bật/tắt còi
   const esp32Url = 'https://192.168.75.174/api/control'; // Thay đổi với địa chỉ IP của ESP32
+
   fetch(esp32Url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: state })
+      body: JSON.stringify({ action: manualBuzzerState })
+  })
+  .then(response => response.json())
+  .then(data => {
+      res.json({ message: 'Command sent to ESP32', status: data.status });
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      res.status(500).json({ message: 'Error sending command to ESP32' });
+  });
+});
+
+// API điều khiển còi tự động
+app.post('/api/control', (req, res) => {
+  const { action } = req.body;
+  autoBuzzerState = action;
+
+  // Gửi lệnh tới ESP32 để bật/tắt còi
+  const esp32Url = 'https://192.168.75.174/api/control'; // Thay đổi với địa chỉ IP của ESP32
+
+  fetch(esp32Url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: autoBuzzerState })
   })
   .then(response => response.json())
   .then(data => {
@@ -95,7 +114,7 @@ app.post('/api/control', (req, res) => {
 });
 
 // ✅ API lấy trạng thái còi hiện tại
-app.get('/api/control', (req, res) => {
+app.get('/api/control/status', (req, res) => {
   res.json({ manual: manualBuzzerState, auto: autoBuzzerState });
 });
 
