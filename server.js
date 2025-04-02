@@ -177,6 +177,41 @@ app.get('/api/gas/latest', async (req, res) => {
     res.status(500).json({ error: 'Không thể lấy dữ liệu mới nhất' });
   }
 });
+const ThresholdSchema = new mongoose.Schema({
+  threshold: Number,
+  updatedAt: { type: Date, default: Date.now }
+});
+const Threshold = mongoose.model('Threshold', ThresholdSchema);
+app.post('/api/threshold', async (req, res) => {
+  const { threshold } = req.body;
+  try {
+      let currentThreshold = await Threshold.findOne();
+      if (!currentThreshold) {
+          currentThreshold = new Threshold({ threshold });
+      } else {
+          currentThreshold.threshold = threshold;
+          currentThreshold.updatedAt = new Date();
+      }
+      await currentThreshold.save();
+      res.json({ message: 'Threshold updated' });
+  } catch (err) {
+      console.error("Error updating threshold:", err);
+      res.status(500).json({ error: 'Failed to update threshold' });
+  }
+});
+app.get('/api/threshold', async (req, res) => {
+  try {
+      const currentThreshold = await Threshold.findOne();
+      if (currentThreshold) {
+          res.json({ threshold: currentThreshold.threshold });
+      } else {
+          res.json({ threshold: 1000 }); // Giá trị mặc định nếu không có ngưỡng
+      }
+  } catch (err) {
+      console.error("Error getting threshold:", err);
+      res.status(500).json({ error: 'Failed to get threshold' });
+  }
+});
 // ✅ Khởi động server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
