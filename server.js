@@ -122,12 +122,11 @@ app.get('/api/esp32/status', async (req, res) => {
 
     if (!status) {
       // Nếu không có bản ghi nào, giả định rằng ESP32 đang ngắt kết nối
-      return res.json({ status: 'disconnected', connectionCount: 0 });
+      return res.json({ status: 'disconnected'});
     }
 
     res.json({
       status: status.isConnected ? 'connected' : 'disconnected',
-      connectionCount: status.connectionCount
     });
   } catch (err) {
     console.error("Lỗi khi lấy trạng thái kết nối ESP32:", err);
