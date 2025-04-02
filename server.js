@@ -13,7 +13,6 @@ mongoose.connect(process.env.MONGODB_URI);
 const GasSchema = new mongoose.Schema({
   gas: Number,
   distance: Number,
-  connectionCount: { type: Number, default: 0 },
   timestamp: { type: Date, default: Date.now }
 });
 const GasData = mongoose.model('GasData', GasSchema);
@@ -143,7 +142,7 @@ app.post('/api/esp32/connect', async (req, res) => {
   try {
       let status = await Esp32Status.findOne();
       if (!status) {
-          status = new Esp32Status({ isConnected: true, connectionCount: 1 });
+          status = new Esp32Status({ isConnected: true});
       } else {
           if (!status.isConnected) {
               status.isConnected = true;
@@ -153,7 +152,6 @@ app.post('/api/esp32/connect', async (req, res) => {
       }
       status.updatedAt = new Date();
       await status.save();
-      console.log(`ESP32 Connected: connectionCount ${status.connectionCount}`);
       res.status(200).json({ message: 'ESP32 connected' });
   } catch (err) {
       console.error("Error while connecting ESP32:", err);
