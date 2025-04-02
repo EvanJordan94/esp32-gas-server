@@ -36,8 +36,9 @@ const Threshold = mongoose.model('Threshold', ThresholdSchema);
 const Threshold = mongoose.model('Threshold', ThresholdSchema);
 
 // Biến lưu trữ kết nối WebSocket với ESP32
-let esp32WebSocket = null;
 
+let esp32WebSocket = null;
+let buzzerState = 'OFF'; // Trạng thái còi
 // Khởi tạo WebSocket server
 const wss = new WebSocket.Server({ port: 8081 }); // Port websocket server
 
@@ -54,6 +55,17 @@ wss.on('connection', ws => {
         console.log(`Received from ESP32: ${message}`);
         // Xử lý tin nhắn từ ESP32 nếu cần
     });
+    // Hàm gửi lệnh đến ESP32
+    function sendCommand(command) {
+      if (esp32WebSocket) {
+          esp32WebSocket.send(JSON.stringify({ command }));
+      } else {
+          console.error('ESP32 not connected');
+      }
+  }
+
+  // Gửi trạng thái còi hiện tại khi ESP32 kết nối
+  sendCommand(buzzerState);
 });
 
 // API: ESP32 gửi dữ liệu
@@ -186,5 +198,19 @@ app.post('/api/esp32/disconnect', async (req, res) => {
         res.status(500).json({ error: 'Failed to disconnect ESP32' });
     }
 });
+// API điều khiển còi thủ công từ Android
+app.post('/api/buzzer/manual', (req, res) => {
+  const { action } = req.body;
+  buzzerState = action; // Cập nhật trạng thái còi
+  if (esp32WebSocket) {
+      esp32WebSocket.send(JSON.stringify({ command: action }));
+      res.json({ message: 'Lệnh đã được gửi' });
+  } else {
+      res.status(500).json({ message: 'ESP32 không kết nối' });
+  }
+});
 
-// API
+// ✅ Khởi động server
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+
