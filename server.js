@@ -29,10 +29,10 @@ let buzzerState = 'OFF'; // Lưu trạng thái còi
 
 // ✅ API: ESP32 gửi dữ liệu
 app.post('/api/gas', async (req, res) => {
-  const { gas, distance, connectionCount } = req.body;
+  const { gas, distance} = req.body;
   console.log("Dữ liệu nhận được từ ESP32:", req.body);  // In dữ liệu nhận từ ESP32
   try {
-    const newData = new GasData({ gas, distance, connectionCount });
+    const newData = new GasData({ gas, distance});
     await newData.save();
     res.status(200).json({ message: 'Saved' });
   } catch (err) {
