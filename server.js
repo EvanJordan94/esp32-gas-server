@@ -19,7 +19,6 @@ const GasData = mongoose.model('GasData', GasSchema);
 
 const StatusSchema = new mongoose.Schema({
   isConnected: Boolean,
-  connectionCount: Number,
   updatedAt: { type: Date, default: Date.now }
 });
 const Esp32Status = mongoose.model('Esp32Status', StatusSchema);
