@@ -118,47 +118,51 @@ app.get('/api/esp32/status', async (req, res) => {
   }
 });
 
-// ✅ API ESP32 kết nối lại (Khi app bật switch)
+/// API ESP32 kết nối lại (Khi app bật switch)
 app.post('/api/esp32/connect', async (req, res) => {
   try {
-    let status = await Esp32Status.findOne();
-    if (!status) {
-      // If no status exists, create it with 'isConnected' set to true
-      status = new Esp32Status({ isConnected: true, connectionCount: 1 });
-    } else {
-      if (!status.isConnected) {
-        // If not connected, increase the connection count
-        status.connectionCount += 1;
+      let status = await Esp32Status.findOne();
+      if (!status) {
+          status = new Esp32Status({ isConnected: true, connectionCount: 1 });
+      } else {
+          if (!status.isConnected) {
+              status.connectionCount += 1;
+              status.isConnected = true;
+          } else {
+              return res.status(200).json({ message: 'ESP32 already connected' });
+          }
       }
-      status.isConnected = true;  // Set to connected
-    }
-    status.updatedAt = new Date(); // Update the timestamp
-    await status.save();  // Save the updated status to DB
-    console.log(`ESP32 Connected: connectionCount ${status.connectionCount}`);
-    res.status(200).json({ message: 'ESP32 connected' });
+      status.updatedAt = new Date();
+      await status.save();
+      console.log(`ESP32 Connected: connectionCount ${status.connectionCount}`);
+      res.status(200).json({ message: 'ESP32 connected' });
   } catch (err) {
-    console.error("Error while connecting ESP32:", err);
-    res.status(500).json({ error: 'Failed to connect ESP32' });
+      console.error("Error while connecting ESP32:", err);
+      res.status(500).json({ error: 'Failed to connect ESP32' });
   }
 });
 
-// ✅ API ESP32 ngắt kết nối (Khi app tắt switch)
+// API ESP32 ngắt kết nối (Khi app tắt switch)
 app.post('/api/esp32/disconnect', async (req, res) => {
   try {
-    let status = await Esp32Status.findOne();
-    if (!status) {
-      // If no status exists, create it with 'isConnected' set to false
-      status = new Esp32Status({ isConnected: false, connectionCount: 0 });
-    } else {
-      status.isConnected = false;  // Set to disconnected
-    }
-    status.updatedAt = new Date(); // Update the timestamp
-    await status.save();  // Save the updated status to DB
-    console.log(`ESP32 Disconnected: connectionCount ${status.connectionCount}`);
-    res.status(200).json({ message: 'ESP32 disconnected' });
+      let status = await Esp32Status.findOne();
+      if (!status) {
+          status = new Esp32Status({ isConnected: false, connectionCount: 0 });
+      } else {
+          if (status.isConnected) {
+              status.isConnected = false;
+              status.updatedAt = new Date();
+              await status.save();
+              console.log(`ESP32 Disconnected: connectionCount ${status.connectionCount}`);
+              return res.status(200).json({ message: 'ESP32 disconnected' });
+          } else {
+              return res.status(200).json({ message: 'ESP32 already disconnected' });
+          }
+      }
+      res.status(200).json({ message: 'ESP32 disconnected' });
   } catch (err) {
-    console.error("Error while disconnecting ESP32:", err);
-    res.status(500).json({ error: 'Failed to disconnect ESP32' });
+      console.error("Error while disconnecting ESP32:", err);
+      res.status(500).json({ error: 'Failed to disconnect ESP32' });
   }
 });
 
