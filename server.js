@@ -51,48 +51,20 @@ app.get('/api/gas', async (req, res) => {
 // ✅ API: Lọc dữ liệu theo thời gian
 app.get('/api/gas/range', async (req, res) => {
   const { from, to } = req.query;
-  const fromDate = moment.tz(from, "Asia/Ho_Chi_Minh").toDate(); // Chuyển đổi sang GMT+7
-  const toDate = moment.tz(to, "Asia/Ho_Chi_Minh").toDate(); // Chuyển đổi sang GMT+7
+  const fromDate = moment.tz(from, "Asia/Ho_Chi_Minh").toDate();
+  const toDate = moment.tz(to, "Asia/Ho_Chi_Minh").toDate();
 
   try {
-      const groupedData = await GasData.aggregate([
-          {
-              $match: {
-                  timestamp: { $gte: fromDate, $lte: toDate }
-              }
-          },
-          {
-              $group: {
-                  _id: {
-                      year: { $year: "$timestamp" },
-                      month: { $month: "$timestamp" },
-                      day: { $dayOfMonth: "$timestamp" },
-                      hour: { $hour: "$timestamp" },
-                      minute: { $minute: { $floor: { $divide: [{ $minute: "$timestamp" }, 15] } } } // Gộp nhóm theo 15 phút
-                  },
-                  avgGas: { $avg: "$gas" },
-                  timestamp: { $first: "$timestamp" } // Lấy timestamp đầu tiên trong nhóm
-              }
-          },
-          {
-              $sort: { timestamp: 1 }
-          },
-          {
-              $project: {
-                  _id: 0,
-                  avgGas: 1,
-                  timestamp: 1
-              }
-          }
-      ]);
+      const filteredData = await GasData.find({
+          timestamp: { $gte: fromDate, $lte: toDate }
+      }).sort({ timestamp: 1 });
 
-      res.json(groupedData);
+      res.json(filteredData);
   } catch (err) {
       console.error("Lỗi khi lọc dữ liệu:", err);
       res.status(500).json({ error: 'Lỗi khi lọc dữ liệu' });
   }
 });
-
 
 app.post('/api/control', (req, res) => {
   const { action } = req.body;
