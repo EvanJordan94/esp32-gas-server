@@ -71,7 +71,7 @@ let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
 app.post('/api/buzzer/manual', (req, res) => {
   const { action } = req.body;
   // Gửi lệnh đến ESP32
-  fetch('http:///manualBuzzer', {
+  fetch('http://192.168.75.174/manualBuzzer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action })
