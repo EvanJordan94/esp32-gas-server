@@ -65,36 +65,39 @@ app.get('/api/gas/range', async (req, res) => {
       res.status(500).json({ error: 'Lỗi khi lọc dữ liệu' });
   }
 });
-
+let manualBuzzerState = 'OFF'; // Trạng thái còi thủ công
+let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
 app.post('/api/control', (req, res) => {
-  const { action } = req.body;
-
-  // Cập nhật trạng thái còi
-  buzzerState = action;
-
+  const { action, manual } = req.body; // Lấy cờ manual
+  let state;
+  if (manual) {
+      manualBuzzerState = action;
+      state = manualBuzzerState;
+  } else {
+      autoBuzzerState = action;
+      state = autoBuzzerState;
+  }
   // Gửi lệnh tới ESP32 để bật/tắt còi
-  const esp32Url = 'https://192.168.75.174/api/control';  // Thay đổi với địa chỉ IP của ESP32
-
+  const esp32Url = 'https://192.168.75.174/api/control'; // Thay đổi với địa chỉ IP của ESP32
   fetch(esp32Url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: state })
   })
   .then(response => response.json())
   .then(data => {
-    res.json({ message: 'Command sent to ESP32', status: data.status });
+      res.json({ message: 'Command sent to ESP32', status: data.status });
   })
   .catch(error => {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Error sending command to ESP32' });
+      console.error('Error:', error);
+      res.status(500).json({ message: 'Error sending command to ESP32' });
   });
 });
 
 // ✅ API lấy trạng thái còi hiện tại
 app.get('/api/control', (req, res) => {
-  res.json({ buzzer: buzzerState });
+  res.json({ manual: manualBuzzerState, auto: autoBuzzerState });
 });
-
 
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
@@ -212,6 +215,7 @@ app.get('/api/threshold', async (req, res) => {
       res.status(500).json({ error: 'Failed to get threshold' });
   }
 });
+
 // ✅ Khởi động server
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
