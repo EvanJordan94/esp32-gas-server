@@ -68,56 +68,46 @@ app.get('/api/gas/range', async (req, res) => {
 let manualBuzzerState = 'OFF'; // Trạng thái còi thủ công
 let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
 // API điều khiển còi thủ công
-app.post('/api/control/manual', (req, res) => {
+app.post('/api/buzzer/manual', (req, res) => {
   const { action } = req.body;
   manualBuzzerState = action;
-
-  // Gửi lệnh tới ESP32 để bật/tắt còi
-  const esp32Url = 'https://192.168.75.174/api/control'; // Thay đổi với địa chỉ IP của ESP32
-
-  fetch(esp32Url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: manualBuzzerState })
-  })
-  .then(response => response.json())
-  .then(data => {
-      res.json({ message: 'Command sent to ESP32', status: data.status });
-  })
-  .catch(error => {
-      console.error('Error:', error);
-      res.status(500).json({ message: 'Error sending command to ESP32' });
-  });
+  sendBuzzerCommandToEsp32(action, res);
 });
 
 // API điều khiển còi tự động
-app.post('/api/control', (req, res) => {
+app.post('/api/buzzer/auto', (req, res) => {
   const { action } = req.body;
   autoBuzzerState = action;
+  sendBuzzerCommandToEsp32(action, res);
+});
 
-  // Gửi lệnh tới ESP32 để bật/tắt còi
-  const esp32Url = 'https://192.168.75.174/api/control'; // Thay đổi với địa chỉ IP của ESP32
-
+// Hàm gửi lệnh đến ESP32
+function sendBuzzerCommandToEsp32(action, res) {
+  const esp32Url = 'http://192.168.75.174/api/buzzer'; // Thay đổi IP
   fetch(esp32Url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: autoBuzzerState })
+      body: JSON.stringify({ action })
   })
   .then(response => response.json())
-  .then(data => {
-      res.json({ message: 'Command sent to ESP32', status: data.status });
-  })
+  .then(data => res.json({ message: 'Lệnh đã được gửi', status: data.status }))
   .catch(error => {
-      console.error('Error:', error);
-      res.status(500).json({ message: 'Error sending command to ESP32' });
+      console.error('Lỗi:', error);
+      res.status(500).json({ message: 'Lỗi gửi lệnh đến ESP32' });
   });
+}
+// API nhận trạng thái còi từ ESP32
+app.post('/api/buzzer/status', (req, res) => {
+  const { status } = req.body;
+  // Lưu trạng thái còi vào database (nếu cần)
+  buzzerState = status;
+  res.json({ message: 'Trạng thái còi đã được cập nhật' });
 });
 
-// ✅ API lấy trạng thái còi hiện tại
+// API lấy trạng thái còi hiện tại
 app.get('/api/control/status', (req, res) => {
   res.json({ manual: manualBuzzerState, auto: autoBuzzerState });
 });
-
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
 app.get('/api/esp32/status', async (req, res) => {
