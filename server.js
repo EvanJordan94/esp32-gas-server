@@ -67,13 +67,29 @@ app.get('/api/gas/range', async (req, res) => {
 });
 let manualBuzzerState = 'OFF'; // Trạng thái còi thủ công
 let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
-// API điều khiển còi thủ công
+// API điều khiển còi thủ công từ Android
 app.post('/api/buzzer/manual', (req, res) => {
   const { action } = req.body;
-  manualBuzzerState = action;
-  sendBuzzerCommandToEsp32(action, res);
+  // Gửi lệnh đến ESP32
+  fetch('http:///manualBuzzer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+  })
+  .then(response => response.json())
+  .then(data => res.json({ message: 'Lệnh đã được gửi', status: data.status }))
+  .catch(error => {
+      console.error('Lỗi:', error);
+      res.status(500).json({ message: 'Lỗi gửi lệnh đến ESP32' });
+  });
 });
 
+// API nhận trạng thái còi từ ESP32
+app.post('/api/buzzer/status', (req, res) => {
+  const { status } = req.body;
+  // Lưu trạng thái còi vào database (nếu cần)
+  res.json({ message: 'Trạng thái còi đã được cập nhật' });
+});
 // API điều khiển còi tự động
 app.post('/api/buzzer/auto', (req, res) => {
   const { action } = req.body;
@@ -96,18 +112,7 @@ function sendBuzzerCommandToEsp32(action, res) {
       res.status(500).json({ message: 'Lỗi gửi lệnh đến ESP32' });
   });
 }
-// API nhận trạng thái còi từ ESP32
-app.post('/api/buzzer/status', (req, res) => {
-  const { status } = req.body;
-  // Lưu trạng thái còi vào database (nếu cần)
-  buzzerState = status;
-  res.json({ message: 'Trạng thái còi đã được cập nhật' });
-});
 
-// API lấy trạng thái còi hiện tại
-app.get('/api/control/status', (req, res) => {
-  res.json({ manual: manualBuzzerState, auto: autoBuzzerState });
-});
 
 // ✅ API kiểm tra trạng thái kết nối ESP32
 app.get('/api/esp32/status', async (req, res) => {
