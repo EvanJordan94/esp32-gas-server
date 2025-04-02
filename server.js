@@ -142,7 +142,6 @@ app.post('/api/esp32/connect', async (req, res) => {
           status = new Esp32Status({ isConnected: true, connectionCount: 1 });
       } else {
           if (!status.isConnected) {
-              status.connectionCount += 1;
               status.isConnected = true;
           } else {
               return res.status(200).json({ message: 'ESP32 already connected' });
