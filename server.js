@@ -70,16 +70,20 @@ let autoBuzzerState = 'OFF'; // Trạng thái còi tự động
 // API điều khiển còi thủ công từ Android
 app.post('/api/buzzer/manual', (req, res) => {
   const { action } = req.body;
-  // Gửi lệnh đến ESP32
   fetch('http://192.168.75.174/manualBuzzer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action })
   })
   .then(response => response.json())
-  .then(data => res.json({ message: 'Lệnh đã được gửi', status: data.status }))
+  .then(data => {
+      // Ghi lại phản hồi từ ESP32
+      console.log("Phản hồi từ ESP32:", data);
+      res.json({ message: 'Lệnh đã được gửi', status: data.status });
+  })
   .catch(error => {
-      console.error('Lỗi:', error);
+      // Ghi lại lỗi
+      console.error("Lỗi gửi lệnh đến ESP32:", error);
       res.status(500).json({ message: 'Lỗi gửi lệnh đến ESP32' });
   });
 });
