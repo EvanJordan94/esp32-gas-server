@@ -159,13 +159,13 @@ app.post('/api/esp32/disconnect', async (req, res) => {
   try {
       let status = await Esp32Status.findOne();
       if (!status) {
-          status = new Esp32Status({ isConnected: false, connectionCount: 0 });
+          status = new Esp32Status({ isConnected: false});
       } else {
           if (status.isConnected) {
               status.isConnected = false;
               status.updatedAt = new Date();
               await status.save();
-              console.log(`ESP32 Disconnected: connectionCount ${status.connectionCount}`);
+              
               return res.status(200).json({ message: 'ESP32 disconnected' });
           } else {
               return res.status(200).json({ message: 'ESP32 already disconnected' });
