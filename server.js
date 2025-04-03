@@ -33,7 +33,6 @@ const ThresholdSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 const Threshold = mongoose.model('Threshold', ThresholdSchema);
-const Threshold = mongoose.model('Threshold', ThresholdSchema);
 
 // Biến lưu trữ kết nối WebSocket với ESP32
 
